@@ -49,6 +49,8 @@ try:
         'api_key': st.secrets["SCRAPER_API_KEY"],
         'url': BASE_URL.format(page=1),
         'keep_headers': 'true',
+        'country_code': 'pk'
+
     }, headers=headers, timeout=50)
 
     data.raise_for_status()
@@ -226,6 +228,8 @@ with st.spinner(f"Loading Page {pg_no}..."):
             'api_key': st.secrets["SCRAPER_API_KEY"],
             'url': new_url,
             'keep_headers': 'true',
+            'country_code': 'pk'
+
         },
         headers=headers,
         timeout=50
