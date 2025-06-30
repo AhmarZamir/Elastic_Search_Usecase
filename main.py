@@ -5,21 +5,62 @@ import streamlit as st
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
 }
-BASE_URL = 'https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075132011&dc&fs=true&brr=1&crid=298MAW5KNLF6K&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{page}'
 
+if "rerun_flag" not in st.session_state:
+    st.session_state.rerun_flag = False
+
+if "genre" not in st.session_state:
+    st.session_state.genre = "Men"    
+    st.session_state.current_page =1
+
+if "prev_genre" not in st.session_state:
+    st.session_state.prev_genre = "Men"
+
+st.markdown("""
+    <style>
+    label[data-testid="stSelectboxLabel"] {
+        color: black !important;
+        font-weight: bold;
+    }
+    </style>
+""", unsafe_allow_html=True)    
+
+selected_genre =st.selectbox("Product Genre",["Men","Boys","Babies","Girls"])
+if(selected_genre != st.session_state.prev_genre):
+        st.session_state.current_page =1
+        st.session_state.genre = selected_genre
+        st.session_state.prev_genre = selected_genre
+        st.session_state.rerun_flag = not st.session_state.rerun_flag    
+
+
+# BASE_URL = 'https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075132011&dc&fs=true&brr=1&crid=298MAW5KNLF6K&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{page}'
+Boys_url ="https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075136011&dc&fs=true&brr=1&crid=298MAW5KNLF6K&qid=1751232193&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{page}"
+if(st.session_state.genre=="Men"):
+    BASE_URL ='https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075132011&dc&fs=true&brr=1&crid=298MAW5KNLF6K&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{page}'
+elif (st.session_state.genre=="Boys"):
+    BASE_URL=Boys_url
+elif(st.session_state.genre=="Babies"):
+    BASE_URL = "https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121833111011&dc&fs=true&brr=1&crid=298MAW5KNLF6K&qid=1751241903&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{page}"    
+elif(st.session_state.genre=="Girls"):
+    BASE_URL="https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075133011&dc&fs=true&brr=1&crid=298MAW5KNLF6K&qid=1751242817&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{page}"
 try:
 
     data = requests.get("https://api.scraperapi.com", params={
         'api_key': st.secrets["SCRAPER_API_KEY"],
         'url': BASE_URL.format(page=1),
         'keep_headers': 'true',
-    }, headers=headers, timeout=20)
+    }, headers=headers, timeout=50)
 
     data.raise_for_status()
     soup = BeautifulSoup(data.text, 'html.parser')
 except Exception as e:
     st.error(f"Error fetching data: {e}")
     st.stop()
+
+# initializing the session state 
+ 
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 1
 
 
 
@@ -36,9 +77,57 @@ try:
 except:
     last_page = 1
 
-# st.write(pagination)
 
-page_url = "https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A1210776011%2Cp_n_feature_thirty-two_browse-bin%3A121075132011&dc&fs=true&page={pg_no}&brr=1&crid=298MAW5KNLF6K&qid=1751166017&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{pg_no}"
+
+def go_next():
+    if(st.session_state.current_page<last_page):
+        st.session_state.current_page += 1
+
+def go_prev():
+    if(st.session_state.current_page>1):
+        st.session_state.current_page -=1
+
+        
+ 
+
+
+
+with st.sidebar :
+    col1, col2 , col3= st.columns([1, 1, 1])
+    with col1:
+        st.button("Prev",on_click=go_prev, disabled=st.session_state.current_page == 1)
+        
+    
+    with col3:
+        st.button("Next",on_click=go_next, disabled=st.session_state.current_page == last_page)
+       
+    page_input = st.number_input(
+        "Go to page:",
+        min_value=1,
+        max_value=last_page,
+        value=st.session_state.current_page,
+        step=1,
+        key="jump_page"
+    )
+    if page_input != st.session_state.current_page:
+        st.session_state.current_page = page_input  
+
+  
+
+    
+
+
+# page_url = "https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A1210776011%2Cp_n_feature_thirty-two_browse-bin%3A121075132011&dc&fs=true&page={pg_no}&brr=1&crid=298MAW5KNLF6K&qid=1751166017&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{pg_no}"
+if(st.session_state.genre=="Men"):
+    page_url ="https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A1210776011%2Cp_n_feature_thirty-two_browse-bin%3A121075132011&dc&fs=true&page={pg_no}&brr=1&crid=298MAW5KNLF6K&qid=1751166017&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{pg_no}"
+elif(st.session_state.genre=="Boys"):
+    page_url ="https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075136011&dc&fs=true&page={pg_no}&brr=1&crid=298MAW5KNLF6K&qid=1751232152&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{pg_no}"
+
+elif(st.session_state.genre=="Babies"):
+    page_url = "https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121833111011&dc&fs=true&page={pg_no}&brr=1&crid=298MAW5KNLF6K&qid=1751241929&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{pg_no}"
+
+elif(st.session_state.genre=="Girls"):
+    page_url="https://www.amazon.com/s?i=fashion-mens-intl-ship&rh=n%3A16225019011%2Cp_n_feature_thirty-two_browse-bin%3A121075133011&dc&fs=true&page={pg_no}&brr=1&crid=298MAW5KNLF6K&qid=1751242832&rd=1&rnid=121075130011&sprefix=%2Cfashion-mens-intl-ship%2C472&xpid=UAvkucKu_X1eB&ref=sr_pg_{pg_no}"
 def show_data(products):
     cols = st.columns(5)
 
@@ -113,44 +202,42 @@ def show_data(products):
            <h2 style="margin: 0; font-size: 14px; font-weight: bold; color: green;">
                 {price}
             </h2>
-             <p style="margin: 0; font-size: 11px; color: #555;">
+             <p style="margin: 0; font-size: 11px; color: #007185;">
                 {no_bought.text.strip() if no_bought else "No sales data"}
             </p>
-            <p style="margin: 0; font-size: 11px; color: #555;">
+            <p style="margin: 0; font-size: 11px; color: #b12704;">
                 {ship.text.strip() if ship else "Shipping info N/A"}
             </p>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
+pg_no = st.session_state.current_page
+new_url = BASE_URL.format(page=pg_no) if pg_no == 1 else page_url.format(pg_no=pg_no)
 
-for page_num in range(1, last_page + 1):
-    if(page_num==1):
-        new_url = BASE_URL.format(page=page_num)
-    else :
+with col2:      
+        st.write(f"Page {st.session_state.current_page}")  
 
-        new_url = page_url.format(pg_no=page_num)
-        st.write(f"Fetching page {page_num}...")
-
+with st.spinner(f"Loading Page {pg_no}..."):         
     try:
         data = requests.get(
-            "https://api.scraperapi.com",
-            params={
-                'api_key': st.secrets["SCRAPER_API_KEY"],
-                'url': new_url,
-                'keep_headers': 'true',
-            },
-            headers=headers,
-            timeout=20
-        )
+        "https://api.scraperapi.com",
+        params={
+            'api_key': st.secrets["SCRAPER_API_KEY"],
+            'url': new_url,
+            'keep_headers': 'true',
+        },
+        headers=headers,
+        timeout=50
+    )
         data.raise_for_status()
         soup = BeautifulSoup(data.text, 'html.parser')
 
         products = soup.find_all(
-            "div", class_="sg-col-4-of-24 sg-col-4-of-12 s-result-item s-asin sg-col-4-of-16 sg-col s-widget-spacing-small sg-col-4-of-20"
-        )
+        "div", class_="sg-col-4-of-24 sg-col-4-of-12 s-result-item s-asin sg-col-4-of-16 sg-col s-widget-spacing-small sg-col-4-of-20"
+    )
+        st.markdown(f"<h2 style='color:#084954;'> Showing Page {pg_no}</h2>", unsafe_allow_html=True)
         show_data(products)
 
     except Exception as e:
-        st.warning(f"Failed to fetch page {page_num}: {e}")
-        continue
+        st.error(f"Failed to fetch page {pg_no}: {e}")
