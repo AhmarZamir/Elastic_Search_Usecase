@@ -1,6 +1,42 @@
 from bs4 import BeautifulSoup
 import requests
 import streamlit as st
+import sqlite3
+
+
+
+
+# Connect to or create the database
+conn = sqlite3.connect('amazon_products.db')
+cursor = conn.cursor()
+
+
+
+
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT UNIQUE,
+    price TEXT,
+    bought TEXT,
+    shipping TEXT,
+    img_url TEXT,
+    genre TEXT,
+    page INTEGER
+)
+""")
+
+conn.commit()
+
+def save_product_to_db(title, price, bought, shipping, img_url, genre, page):
+    cursor.execute("""
+        INSERT OR IGNORE INTO products (title, price, bought, shipping, img_url, genre, page)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (title, price, bought, shipping, img_url, genre, page))
+    conn.commit()
+
+
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
@@ -156,7 +192,7 @@ def show_data(products):
 
         img_url = img.get("src")
         product_detail = span.text.strip()
-
+        save_product_to_db(product_detail,price,no_bought.text.strip() if no_bought else "No sales data",ship.text.strip() if ship else "Shipping info N/A",img_url,st.session_state.genre, st.session_state.current_page)
         col = cols[key % 5]
         with col:
             st.markdown(f"""
@@ -245,3 +281,11 @@ with st.spinner(f"Loading Page {pg_no}..."):
 
     except Exception as e:
         st.error(f"Failed to fetch page {pg_no}: {e}")
+
+
+import pandas as pd
+
+if st.checkbox("View Database as Table"):
+    conn = sqlite3.connect('amazon_products.db')
+    df = pd.read_sql_query("SELECT * FROM products", conn)
+    st.dataframe(df)
