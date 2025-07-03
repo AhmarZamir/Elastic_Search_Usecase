@@ -70,7 +70,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)    
 
-genre_list = [  "Boys"]
+genre_list = [ "Men","Boys","Babies","Girls"]
 selected_genre = st.selectbox("Product Genre", genre_list)
 
 if selected_genre != st.session_state.prev_genre:
@@ -188,7 +188,7 @@ def fetch_and_save_products(genre, page):
 def auto_fetch_all_genres():
     for genre in genre_list:
         st.session_state.current_fetch_genre = st.session_state.genre
-        st.session_state.current_fetch_page = 190
+        st.session_state.current_fetch_page = 1
         
         # Get last page for this genre
 
@@ -209,7 +209,7 @@ def auto_fetch_all_genres():
         except:
             last_pg = 1
         
-        for page in range(190, last_pg + 1):
+        for page in range(1, last_pg + 1):
             st.session_state.current_fetch_page = page
             fetch_and_save_products(genre, page)
             time.sleep(2)  # Add delay to avoid rate limiting
